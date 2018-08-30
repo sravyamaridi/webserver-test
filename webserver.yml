@@ -1,0 +1,69 @@
+---
+- hosts: all
+  become: yes
+  vars: 
+    httpd_port: 81
+    apache_port: 81
+  tasks:
+  - name: update Debian cache
+    apt: 
+      update_cache: yes
+    when: ansible_os_family == "Debian"
+  - name: update RedHat cache
+    yum: 
+      name: '*'
+      update_cache: yes
+      state: latest
+    when: ansible_os_family == "RedHat"
+  - name: install apache2 on Debian
+    apt:
+      name: apache2
+      state: present
+    notify: 
+    - restart apache2
+    when: ansible_os_family == "Debian"
+  - name: install httpd on RedHat
+    yum: 
+      name: httpd
+      state: present
+    notify:
+    - restart httpd
+    when: ansible_os_family == "RedHat"
+  - name: configure homepage for Debian
+    copy:
+      src: /home/ansile/index.html
+      dest: /var/www/html/index.html
+    notify: 
+    - restart apache2
+    when: ansible_os_family == "Debian"
+  - name: configure homepage for RedHat
+    copy: 
+      src: /home/ansile/index.html
+      dest: /var/www/html/index.html
+    notify:
+    - restart httpd
+    when: ansible_os_family == "RedHat"
+  - name: change port number of apache2
+    template:
+      src: /home/ansile/ports.conf.j2
+      dest: /etc/apache2/ports.conf
+    notify:
+    - restart apache2
+    when: ansible_os_family == "Debian"
+  - name: change port number of httpd
+    template:
+      src: /home/ansile/httpd.conf.j2
+      dest: /etc/httpd/conf/httpd.conf
+    notify:
+    - restart httpd
+    when: ansible_os_family == "RedHat"
+  handlers:
+    - name: restart apache2 
+      service:
+        name: apache2
+        state: restarted
+    - name: restart httpd 
+      service: 
+        name: httpd
+        state: restarted 
+   
